@@ -4,7 +4,6 @@ import argparse
 import sys
 import math
 import os
-
 import numpy as np
 
 import mindspore.nn as nn
@@ -129,104 +128,108 @@ def vgg16(num_classes=1000, args=None, phase="train"):
     net = Vgg(base16, num_classes=num_classes, args=args, batch_norm=args.batch_norm, phase=phase)
     return net
 
-# 运用MembershipInference进行隐私安全评估
-# 1.构建VGG16模型并加载参数文件。这里直接加载预训练完成的VGG16参数配置，您也可以使用如上的网络自行训练。
+
 #
-# load parameter
-# data_path = '/AUT'
-# data_path = '/Users/chunjiangmei/Development/PycharmProjects/AUT_COMP971_ResearchProject/cifar-100-binary'
-# pre_trained = './VGG16-100_781.ckpt'
-
-
-# python MindSpore_MembershipInference_Sample.py --data_path ./cifar-100-binary/ --pre_trained ./VGG16-100_781.ckpt
-
-parser = argparse.ArgumentParser("main case arg parser.")
-parser.add_argument("--data_path",   type=str,  required=True, help="Data home path for dataset")
-parser.add_argument("--pre_trained", type=str,  required=True, help="Checkpoint path")
-args = parser.parse_args()
-args.batch_norm = True
-args.has_dropout = False
-args.has_bias = False
-args.padding = 0
-args.pad_mode = "same"
-args.weight_decay = 5e-4
-args.loss_scale = 1.0
-
-# Load the pretrained model.
-net = vgg16(num_classes=100, args=args)
-loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
-opt = nn.Momentum(params=net.trainable_params(), learning_rate=0.1, momentum=0.9,
-                  weight_decay=args.weight_decay, loss_scale=args.loss_scale)
-load_param_into_net(net, load_checkpoint(args.pre_trained))
-model = Model(network=net, loss_fn=loss, optimizer=opt)
-
-# 2.加载CIFAR-100数据集，按8:2分割为成员推理模型的训练集和测试集。
-# Load and split dataset.
-train_dataset = vgg_create_dataset100(data_home=args.data_path, image_size=(224, 224),
-                                      batch_size=64, num_samples=5000, shuffle=False)
-test_dataset = vgg_create_dataset100(data_home=args.data_path, image_size=(224, 224),
-                                     batch_size=64, num_samples=5000, shuffle=False, training=False)
-train_train, eval_train = train_dataset.split([0.8, 0.2])
-train_test, eval_test = test_dataset.split([0.8, 0.2])
-msg = "Data loading completed."
-LOGGER.info(TAG, msg)
-
-# 3.配置推理参数和评估参数
-# 设置用于成员推理的方法和参数。目前支持的推理方法有：KNN、LR、MLPClassifier和RandomForestClassifier。
-# 推理参数数据类型使用list，各个方法使用key为”method”和”params”的字典表示。
-config = [
-        {
-            "method": "lr",
-            "params": {
-                "C": np.logspace(-4, 2, 10)
-            }
-        },
-     {
-            "method": "knn",
-            "params": {
-                "n_neighbors": [3, 5, 7]
-            }
-        },
-        {
-            "method": "mlp",
-            "params": {
-                "hidden_layer_sizes": [(64,), (32, 32)],
-                "solver": ["adam"],
-                "alpha": [0.0001, 0.001, 0.01]
-            }
-        },
-        {
-            "method": "rf",
-            "params": {
-                "n_estimators": [100],
-                "max_features": ["auto", "sqrt"],
-                "max_depth": [5, 10, 20, None],
-                "min_samples_split": [2, 5, 10],
-                "min_samples_leaf": [1, 2, 4]
-            }
-        }
-    ]
-
-# 我们约定标签为训练集的是正类，标签为测试集的是负类。设置评价指标，目前支持3种评价指标。包括：
-# 准确率：accuracy，正确推理的数量占全体样本中的比例。
-# 精确率：precision，正确推理的正类样本占所有推理为正类中的比例。
-# 召回率：recall，正确推理的正类样本占全体正类样本的比例。 在样本数量足够大时，如果上述指标均大于0.6，我们认为目标模型就存在隐私泄露的风险。
-metrics = ["precision", "accuracy", "recall"]
-
-# 4.训练成员推理模型，并给出评估结果。
-inference = MembershipInference(model)                  # Get inference model.
-
-inference.train(train_train, train_test, config)        # Train inference model.
-msg = "Membership inference model training completed."
-LOGGER.info(TAG, msg)
-
-result = inference.eval(eval_train, eval_test, metrics) # Eval metrics.
-count = len(config)
-for i in range(count):
-    print("Method: {}, {}".format(config[i]["method"], result[i]))
-
-# 5.实验结果。 执行如下指令,开始成员推理训练和评估：
-# python example_vgg_cifar.py --data_path ./cifar-100-binary/ --pre_trained ./VGG16-100_781.ckpt
+#
+#
+# # 运用MembershipInference进行隐私安全评估
+# # 1.构建VGG16模型并加载参数文件。这里直接加载预训练完成的VGG16参数配置，您也可以使用如上的网络自行训练。
+# #
+# # load parameter
+# # data_path = '/AUT'
+# # data_path = '/Users/chunjiangmei/Development/PycharmProjects/AUT_COMP971_ResearchProject/cifar-100-binary'
+# # pre_trained = './VGG16-100_781.ckpt'
+#
+#
+# # python MindSpore_MembershipInference_Sample.py --data_path ./cifar-100-binary/ --pre_trained ./VGG16-100_781.ckpt
+#
+# parser = argparse.ArgumentParser("main case arg parser.")
+# parser.add_argument("--data_path",   type=str,  required=True, help="Data home path for dataset")
+# parser.add_argument("--pre_trained", type=str,  required=True, help="Checkpoint path")
+# args = parser.parse_args()
+# args.batch_norm = True
+# args.has_dropout = False
+# args.has_bias = False
+# args.padding = 0
+# args.pad_mode = "same"
+# args.weight_decay = 5e-4
+# args.loss_scale = 1.0
+#
+# # Load the pretrained model.
+# net = vgg16(num_classes=100, args=args)
+# loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+# opt = nn.Momentum(params=net.trainable_params(), learning_rate=0.1, momentum=0.9,
+#                   weight_decay=args.weight_decay, loss_scale=args.loss_scale)
+# load_param_into_net(net, load_checkpoint(args.pre_trained))
+# model = Model(network=net, loss_fn=loss, optimizer=opt)
+#
+# # 2.加载CIFAR-100数据集，按8:2分割为成员推理模型的训练集和测试集。
+# # Load and split dataset.
+# train_dataset = vgg_create_dataset100(data_home=args.data_path, image_size=(224, 224),
+#                                       batch_size=64, num_samples=5000, shuffle=False)
+# test_dataset = vgg_create_dataset100(data_home=args.data_path, image_size=(224, 224),
+#                                      batch_size=64, num_samples=5000, shuffle=False, training=False)
+# train_train, eval_train = train_dataset.split([0.8, 0.2])
+# train_test, eval_test = test_dataset.split([0.8, 0.2])
+# msg = "Data loading completed."
+# LOGGER.info(TAG, msg)
+#
+# # 3.配置推理参数和评估参数
+# # 设置用于成员推理的方法和参数。目前支持的推理方法有：KNN、LR、MLPClassifier和RandomForestClassifier。
+# # 推理参数数据类型使用list，各个方法使用key为”method”和”params”的字典表示。
+# config = [
+#         {
+#             "method": "lr",
+#             "params": {
+#                 "C": np.logspace(-4, 2, 10)
+#             }
+#         },
+#      {
+#             "method": "knn",
+#             "params": {
+#                 "n_neighbors": [3, 5, 7]
+#             }
+#         },
+#         {
+#             "method": "mlp",
+#             "params": {
+#                 "hidden_layer_sizes": [(64,), (32, 32)],
+#                 "solver": ["adam"],
+#                 "alpha": [0.0001, 0.001, 0.01]
+#             }
+#         },
+#         {
+#             "method": "rf",
+#             "params": {
+#                 "n_estimators": [100],
+#                 "max_features": ["auto", "sqrt"],
+#                 "max_depth": [5, 10, 20, None],
+#                 "min_samples_split": [2, 5, 10],
+#                 "min_samples_leaf": [1, 2, 4]
+#             }
+#         }
+#     ]
+#
+# # 我们约定标签为训练集的是正类，标签为测试集的是负类。设置评价指标，目前支持3种评价指标。包括：
+# # 准确率：accuracy，正确推理的数量占全体样本中的比例。
+# # 精确率：precision，正确推理的正类样本占所有推理为正类中的比例。
+# # 召回率：recall，正确推理的正类样本占全体正类样本的比例。 在样本数量足够大时，如果上述指标均大于0.6，我们认为目标模型就存在隐私泄露的风险。
+# metrics = ["precision", "accuracy", "recall"]
+#
+# # 4.训练成员推理模型，并给出评估结果。
+# inference = MembershipInference(model)                  # Get inference model.
+#
+# inference.train(train_train, train_test, config)        # Train inference model.
+# msg = "Membership inference model training completed."
+# LOGGER.info(TAG, msg)
+#
+# result = inference.eval(eval_train, eval_test, metrics) # Eval metrics.
+# count = len(config)
+# for i in range(count):
+#     print("Method: {}, {}".format(config[i]["method"], result[i]))
+#
+# # 5.实验结果。 执行如下指令,开始成员推理训练和评估：
+# # python MindSpore_MembershipInference_Sample.py --data_path ./cifar-100-binary/ --pre_trained ./VGG16-100_781.ckpt
 
 
 
