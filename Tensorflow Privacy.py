@@ -170,7 +170,7 @@ for dataset in [ 'cifar10']:
 
     # make the neural network model with the function specified above.
     # one model is supposed to train for 10, one for 50 epochs
-    model = make_simple_model(dataset,'Yes')
+    model = make_simple_model(dataset,regularization = 'Yes')
     model.summary()
 
     # specify parameters
@@ -181,7 +181,7 @@ for dataset in [ 'cifar10']:
     model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 
     # train the model
-    history = model.fit(train_data, train_labels, validation_data=(test_data, test_labels),batch_size=128,epochs=60)
+    history = model.fit(train_data, train_labels, validation_data=(test_data, test_labels),batch_size=128,epochs=1)
 
     # plot accuracy for the first model
 
@@ -191,8 +191,15 @@ for dataset in [ 'cifar10']:
     plt.ylim(0,1)
     plt.xlabel('epochs')
     plt.ylabel('accuracy')
-    plt.title('Simple Mode trained by '+ dataset)
+    plt.title('Simple Mode trained by '+ dataset + '(Regularization = Yes)')
     plt.show()
+
+    logFile = open('Simple Mode trained by '+ dataset + '(Regularization = Yes).txt', 'w')
+    print(history.history['loss'])
+    print(history.history['accuracy'])
+    print(history.history['val_loss'])
+    print(history.history['val_accuracy'])
+    logFile.close()
 
     # since we have not specified an activation function on the last layer
     # calling the predict function returns the logits
@@ -234,7 +241,7 @@ for dataset in [ 'cifar10']:
     import tensorflow_privacy.privacy.membership_inference_attack.plotting as plotting
     # print(plotting.plot_roc_curve(attacks_result.get_result_with_max_auc().roc_curve))
     figure = plotting.plot_roc_curve(attacks_result.get_result_with_max_auc().roc_curve)
-    figure.suptitle(dataset)
+    figure.suptitle('Simple Mode Attacked by '+dataset+ ' (Regularization = Yes)')
     figure.show()
     # plt.title(dataset)
     # plt.show()
