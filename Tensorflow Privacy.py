@@ -9,6 +9,7 @@ from scipy import special
 from tensorflow.keras.layers import Input, Conv2D, Dense, Flatten, MaxPooling2D,Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.regularizers import l1,l2
 
 # tensorflow-privacy
 from tensorflow_privacy.privacy.membership_inference_attack import membership_inference_attack as mia
@@ -137,15 +138,17 @@ def make_simple_model(dataset):
     x = MaxPooling2D()(x)
 
     x = Flatten()(x)
-    x = Dense(128, activation='relu')(x)
+    x = Dense(128, activation='relu',kernel_regularizer=l2(0.0003))(x)
     # if we don't specify an activation for the last layer, we can have the logits
-    x = Dense(10)(x)
+    x = Dense(10,kernel_regularizer=l2(0.0003))(x)
     model = Model(i, x)
     return model
 # train_data, train_labels, test_data, test_labels = load_cifar10()
 # train_data, train_labels, test_data, test_labels = load_MNIST()
 # train_data, train_labels, test_data, test_labels = load_fashion_mnist()
-for dataset in ['MNIST', 'cifar10', 'Fashion_mnist']:
+# [ 'cifar10', 'MNIST','Fashion_mnist']
+
+for dataset in [ 'cifar10']:
     # dataset = 'Fashion_mnist' # MNIST, cifar10, Fashion_mnist
     train_data, train_labels, test_data, test_labels = load_datasets(dataset)
     print(np.shape(train_data),np.shape(train_labels),np.shape(test_data),np.shape(test_labels))
@@ -176,11 +179,14 @@ for dataset in ['MNIST', 'cifar10', 'Fashion_mnist']:
     history = model.fit(train_data, train_labels, validation_data=(test_data, test_labels),batch_size=128,epochs=30)
 
     # plot accuracy for the first model
+
     plt.plot(history.history['accuracy'], label='acc')
     plt.plot(history.history['val_accuracy'], label='val_acc')
     plt.legend()
     plt.ylim(0,1)
-    plt.title(dataset)
+    plt.xlabel('epochs')
+    plt.ylabel('accuracy')
+    plt.title('Simple Mode trained by '+ dataset)
     plt.show()
 
     # since we have not specified an activation function on the last layer
@@ -223,6 +229,7 @@ for dataset in ['MNIST', 'cifar10', 'Fashion_mnist']:
     import tensorflow_privacy.privacy.membership_inference_attack.plotting as plotting
     # print(plotting.plot_roc_curve(attacks_result.get_result_with_max_auc().roc_curve))
     figure = plotting.plot_roc_curve(attacks_result.get_result_with_max_auc().roc_curve)
+    figure.suptitle(dataset)
     figure.show()
-    plt.title(dataset)
-    plt.show()
+    # plt.title(dataset)
+    # plt.show()
