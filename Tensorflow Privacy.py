@@ -114,7 +114,7 @@ def make_simple_model():
     x = Dense(10)(x)
     model = Model(i, x)
     return model
-def make_simple_model(dataset):
+def make_simple_model(dataset,regularization = 'No', coefficient = 0.0003):
     """ Define a Keras model without much of regularization. Such a model is prone to overfitting"""
     if dataset == 'MNIST':                      # (70000,28,28)
         shape = (28, 28, 1)
@@ -138,9 +138,14 @@ def make_simple_model(dataset):
     x = MaxPooling2D()(x)
 
     x = Flatten()(x)
-    x = Dense(128, activation='relu',kernel_regularizer=l2(0.0003))(x)
-    # if we don't specify an activation for the last layer, we can have the logits
-    x = Dense(10,kernel_regularizer=l2(0.0003))(x)
+    if regularization == 'Yes':
+        x = Dense(128, activation='relu',kernel_regularizer=l2(coefficient))(x)
+        # if we don't specify an activation for the last layer, we can have the logits
+        x = Dense(10,kernel_regularizer=l2(coefficient))(x)
+    else:
+        x = Dense(128, activation='relu')(x)
+        # if we don't specify an activation for the last layer, we can have the logits
+        x = Dense(10)(x)
     model = Model(i, x)
     return model
 # train_data, train_labels, test_data, test_labels = load_cifar10()
@@ -165,7 +170,7 @@ for dataset in [ 'cifar10']:
 
     # make the neural network model with the function specified above.
     # one model is supposed to train for 10, one for 50 epochs
-    model = make_simple_model(dataset)
+    model = make_simple_model(dataset,'Yes')
     model.summary()
 
     # specify parameters
@@ -176,7 +181,7 @@ for dataset in [ 'cifar10']:
     model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 
     # train the model
-    history = model.fit(train_data, train_labels, validation_data=(test_data, test_labels),batch_size=128,epochs=30)
+    history = model.fit(train_data, train_labels, validation_data=(test_data, test_labels),batch_size=128,epochs=60)
 
     # plot accuracy for the first model
 
