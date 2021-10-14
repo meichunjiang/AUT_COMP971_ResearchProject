@@ -1,4 +1,5 @@
 # general imports
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -153,8 +154,10 @@ def make_simple_model(dataset,regularization = 'No', coefficient = 0.0003):
 # train_data, train_labels, test_data, test_labels = load_fashion_mnist()
 # [ 'cifar10', 'MNIST','Fashion_mnist']
 
-for dataset in [ 'cifar10']:
-    # dataset = 'Fashion_mnist' # MNIST, cifar10, Fashion_mnist
+
+
+for dataset in [ 'cifar10']:                # MNIST, cifar10, Fashion_mnist
+    # load dataset
     train_data, train_labels, test_data, test_labels = load_datasets(dataset)
     print(np.shape(train_data),np.shape(train_labels),np.shape(test_data),np.shape(test_labels))
     # show some train data
@@ -168,9 +171,14 @@ for dataset in [ 'cifar10']:
     plt.tight_layout()
     plt.show()
 
+    epochs = 50
+    regularization = 'Yes'
+    # regularization = 'No'
+    title = 'SimpleModel trained on '+dataset+ ' for '+str(epochs)+' times.'+'(Regularization = '+regularization+')'
+
     # make the neural network model with the function specified above.
     # one model is supposed to train for 10, one for 50 epochs
-    model = make_simple_model(dataset,regularization = 'Yes')
+    model = make_simple_model(dataset,regularization)
     model.summary()
 
     # specify parameters
@@ -181,25 +189,30 @@ for dataset in [ 'cifar10']:
     model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 
     # train the model
-    history = model.fit(train_data, train_labels, validation_data=(test_data, test_labels),batch_size=128,epochs=1)
+    history = model.fit(train_data, train_labels, validation_data=(test_data, test_labels),batch_size=128,epochs=epochs)
 
     # plot accuracy for the first model
-
     plt.plot(history.history['accuracy'], label='acc')
     plt.plot(history.history['val_accuracy'], label='val_acc')
     plt.legend()
     plt.ylim(0,1)
     plt.xlabel('epochs')
     plt.ylabel('accuracy')
-    plt.title('Simple Mode trained by '+ dataset + '(Regularization = Yes)')
+    plt.title(title)
+    plt.savefig('./'+title+'_Model.jpg')
     plt.show()
 
-    logFile = open('Simple Mode trained by '+ dataset + '(Regularization = Yes).txt', 'w')
-    print(history.history['loss'])
-    print(history.history['accuracy'])
-    print(history.history['val_loss'])
-    print(history.history['val_accuracy'])
-    logFile.close()
+    logfile_name = title+'.txt'
+    if os.path.exists(logfile_name):
+        os.remove(logfile_name)
+
+    logfile = open(logfile_name,'w')
+    print(history.history['loss'],file= logfile)
+    print(history.history['accuracy'],file= logfile)
+    print(history.history['val_loss'],file= logfile)
+    print(history.history['val_accuracy'],file= logfile)
+
+
 
     # since we have not specified an activation function on the last layer
     # calling the predict function returns the logits
@@ -234,14 +247,19 @@ for dataset in [ 'cifar10']:
     # run the attack
     attacks_result = mia.run_attacks(attack_input=attack_input, slicing_spec=slicing_spec, attack_types=attack_types)
 
+
+
     # summary by data slice (the best performing attacks per slice are presented)
-    print(attacks_result.summary(by_slices=True))
+    print(attacks_result.summary(by_slices=True),file= logfile)
 
     # plot the curve, we see that the attacker is much better than random guessing
     import tensorflow_privacy.privacy.membership_inference_attack.plotting as plotting
     # print(plotting.plot_roc_curve(attacks_result.get_result_with_max_auc().roc_curve))
     figure = plotting.plot_roc_curve(attacks_result.get_result_with_max_auc().roc_curve)
-    figure.suptitle('Simple Mode Attacked by '+dataset+ ' (Regularization = Yes)')
+    figure.suptitle(title)
     figure.show()
+    figure.savefig('./'+title+'_MIA.jpg')
+    logfile.close()
+
     # plt.title(dataset)
     # plt.show()
