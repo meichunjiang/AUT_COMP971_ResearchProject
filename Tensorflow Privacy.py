@@ -157,109 +157,122 @@ def make_simple_model(dataset,regularization = 'No', coefficient = 0.0003):
 
 
 for dataset in [ 'cifar10']:                # MNIST, cifar10, Fashion_mnist
-    # load dataset
-    train_data, train_labels, test_data, test_labels = load_datasets(dataset)
-    print(np.shape(train_data),np.shape(train_labels),np.shape(test_data),np.shape(test_labels))
-    # show some train data
-    num_row ,num_col = 2 , 5
-    fig, axes = plt.subplots(num_row, num_col, figsize=(1.5*num_col,2*num_row))
-    for i in range(10):
-        ax = axes[i//num_col, i%num_col]
-        ax.set_axis_off()
-        ax.imshow(train_data[i])
+    for epochs in [10,30,50]:
+        # load dataset
+        train_data, train_labels, test_data, test_labels = load_datasets(dataset)
+        print(np.shape(train_data),np.shape(train_labels),np.shape(test_data),np.shape(test_labels))
+        # show some train data
+        num_row ,num_col = 2 , 5
+        fig, axes = plt.subplots(num_row, num_col, figsize=(1.5*num_col,2*num_row))
+        for i in range(10):
+            ax = axes[i//num_col, i%num_col]
+            ax.set_axis_off()
+            ax.imshow(train_data[i])
 
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
 
-    epochs = 50
-    regularization = 'Yes'
-    # regularization = 'No'
-    title = 'SimpleModel trained on '+dataset+ ' for '+str(epochs)+' times.'+'(Regularization = '+regularization+')'
+        # epochs = 50
+        # regularization = 'Yes'
+        regularization = 'No'
+        title = 'SimpleModel trained on '+dataset+ ' for '+str(epochs)+' times.'+'(Regularization = '+regularization+')'
 
-    # make the neural network model with the function specified above.
-    # one model is supposed to train for 10, one for 50 epochs
-    model = make_simple_model(dataset,regularization)
-    model.summary()
+        # make the neural network model with the function specified above.
+        # one model is supposed to train for 10, one for 50 epochs
+        model = make_simple_model(dataset,regularization)
+        model.summary()
 
-    # specify parameters
-    optimizer = tf.keras.optimizers.Adam()
-    loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        # specify parameters
+        optimizer = tf.keras.optimizers.Adam()
+        loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
-    # compile the model
-    model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
+        # compile the model
+        model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 
-    # train the model
-    history = model.fit(train_data, train_labels, validation_data=(test_data, test_labels),batch_size=128,epochs=epochs)
+        # train the model
+        history = model.fit(train_data, train_labels, validation_data=(test_data, test_labels),batch_size=128,epochs=epochs)
 
-    # plot accuracy for the first model
-    plt.plot(history.history['accuracy'], label='acc')
-    plt.plot(history.history['val_accuracy'], label='val_acc')
-    plt.legend()
-    plt.ylim(0,1)
-    plt.xlabel('epochs')
-    plt.ylabel('accuracy')
-    plt.title(title)
-    plt.savefig('./'+title+'_Model.jpg')
-    plt.show()
+        # plot accuracy for the first model
+        # plt.plot(history.history['accuracy'], label='acc')
+        # plt.plot(history.history['val_accuracy'], label='val_acc')
+        # plt.legend()
+        # plt.ylim(0,1)
+        # plt.xlabel('epochs')
+        # plt.ylabel('accuracy')
+        # plt.title(title)
+        # plt.savefig('./'+title+'_Model.jpg')
+        # plt.show()
 
-    logfile_name = title+'.txt'
-    if os.path.exists(logfile_name):
-        os.remove(logfile_name)
+        # plot Loss for the first model
+        plt.plot(history.history['loss'], label='train loss')
+        plt.plot(history.history['val_loss'], label='val_loss')
+        plt.legend()
+        plt.ylim(0,2)
+        plt.xlabel('epochs')
+        plt.ylabel('loss')
+        plt.title(title)
+        plt.savefig('./'+title+'_Model.jpg')
+        plt.show()
 
-    logfile = open(logfile_name,'w')
-    print(history.history['loss'],file= logfile)
-    print(history.history['accuracy'],file= logfile)
-    print(history.history['val_loss'],file= logfile)
-    print(history.history['val_accuracy'],file= logfile)
+        logfile_name = title+'.txt'
+        if os.path.exists(logfile_name):
+            os.remove(logfile_name)
+
+        logfile = open(logfile_name,'w')
+        print(history.history['loss'],file= logfile)
+        print(history.history['accuracy'],file= logfile)
+        print(history.history['val_loss'],file= logfile)
+        print(history.history['val_accuracy'],file= logfile)
+
+        #
+        #
+        # # since we have not specified an activation function on the last layer
+        # # calling the predict function returns the logits
+        # print('Predict on train...')
+        # logits_train = model.predict(train_data)
+        # print('Predict on test...')
+        # logits_test = model.predict(test_data)
+        #
+        # print('Apply softmax to get probabilities from logits...')
+        # prob_train = special.softmax(logits_train, axis=1)
+        # prob_test = special.softmax(logits_test, axis=1)
+        #
+        # print('Compute losses...')
+        # cce = tf.keras.backend.categorical_crossentropy
+        # constant = tf.keras.backend.constant
+        #
+        # y_train_onehot = to_categorical(train_labels)
+        # y_test_onehot = to_categorical(test_labels)
+        #
+        # loss_train = cce(constant(y_train_onehot), constant(prob_train), from_logits=False).numpy()
+        # loss_test = cce(constant(y_test_onehot), constant(prob_test), from_logits=False).numpy()
+        #
+        # # define what variables our attacker should have access to
+        # attack_input = AttackInputData( logits_train = logits_train,logits_test = logits_test,loss_train = loss_train, loss_test = loss_test, labels_train = train_labels,labels_test = test_labels)
+        #
+        # # how should the data be sliced
+        # slicing_spec = SlicingSpec(entire_dataset = True,by_class = True, by_percentiles = False,by_classification_correctness = True)
+        #
+        # # define the type of attacker model that we want to use
+        # attack_types = [ AttackType.THRESHOLD_ATTACK, AttackType.LOGISTIC_REGRESSION ]
+        #
+        # # run the attack
+        # attacks_result = mia.run_attacks(attack_input=attack_input, slicing_spec=slicing_spec, attack_types=attack_types)
+        #
+        #
+        #
+        # # summary by data slice (the best performing attacks per slice are presented)
+        # print(attacks_result.summary(by_slices=True),file= logfile)
+        #
+        # # plot the curve, we see that the attacker is much better than random guessing
+        # import tensorflow_privacy.privacy.membership_inference_attack.plotting as plotting
+        # # print(plotting.plot_roc_curve(attacks_result.get_result_with_max_auc().roc_curve))
+        # figure = plotting.plot_roc_curve(attacks_result.get_result_with_max_auc().roc_curve)
+        # figure.suptitle(title)
+        # figure.show()
+        # figure.savefig('./'+title+'_MIA.jpg')
 
 
-
-    # since we have not specified an activation function on the last layer
-    # calling the predict function returns the logits
-    print('Predict on train...')
-    logits_train = model.predict(train_data)
-    print('Predict on test...')
-    logits_test = model.predict(test_data)
-
-    print('Apply softmax to get probabilities from logits...')
-    prob_train = special.softmax(logits_train, axis=1)
-    prob_test = special.softmax(logits_test, axis=1)
-
-    print('Compute losses...')
-    cce = tf.keras.backend.categorical_crossentropy
-    constant = tf.keras.backend.constant
-
-    y_train_onehot = to_categorical(train_labels)
-    y_test_onehot = to_categorical(test_labels)
-
-    loss_train = cce(constant(y_train_onehot), constant(prob_train), from_logits=False).numpy()
-    loss_test = cce(constant(y_test_onehot), constant(prob_test), from_logits=False).numpy()
-
-    # define what variables our attacker should have access to
-    attack_input = AttackInputData( logits_train = logits_train,logits_test = logits_test,loss_train = loss_train, loss_test = loss_test, labels_train = train_labels,labels_test = test_labels)
-
-    # how should the data be sliced
-    slicing_spec = SlicingSpec(entire_dataset = True,by_class = True, by_percentiles = False,by_classification_correctness = True)
-
-    # define the type of attacker model that we want to use
-    attack_types = [ AttackType.THRESHOLD_ATTACK, AttackType.LOGISTIC_REGRESSION ]
-
-    # run the attack
-    attacks_result = mia.run_attacks(attack_input=attack_input, slicing_spec=slicing_spec, attack_types=attack_types)
-
-
-
-    # summary by data slice (the best performing attacks per slice are presented)
-    print(attacks_result.summary(by_slices=True),file= logfile)
-
-    # plot the curve, we see that the attacker is much better than random guessing
-    import tensorflow_privacy.privacy.membership_inference_attack.plotting as plotting
-    # print(plotting.plot_roc_curve(attacks_result.get_result_with_max_auc().roc_curve))
-    figure = plotting.plot_roc_curve(attacks_result.get_result_with_max_auc().roc_curve)
-    figure.suptitle(title)
-    figure.show()
-    figure.savefig('./'+title+'_MIA.jpg')
-    logfile.close()
-
-    # plt.title(dataset)
-    # plt.show()
+        logfile.close()
+        # plt.title(dataset)
+        # plt.show()
